@@ -52,7 +52,62 @@ function update(){count.textContent=cart.reduce((s,x)=>s+x.qty,0);cartItems.inne
 function change(k,d){cart[k].qty+=d;if(cart[k].qty<=0)cart.splice(k,1);update()}
 function openCart(){drawer.classList.add('open');overlay.classList.add('open')}function closeCart(){drawer.classList.remove('open');overlay.classList.remove('open')}
 function openOrder(){if(!cart.length)return alert('Bạn chưa chọn sản phẩm.');orderModal.classList.add('open')}function closeOrder(){orderModal.classList.remove('open')}
-function submitOrder(e){e.preventDefault();let o={date:new Date().toLocaleString('vi-VN'),name:oName.value,phone:oPhone.value,address:oAddress.value,pay:oPay.value,note:oNote.value,items:cart.map(x=>({name:products[x.i].name,qty:x.qty,price:products[x.i].price})),total:cart.reduce((s,x)=>s+products[x.i].price*x.qty,0)};orders.unshift(o);localStorage.setItem(OKEY,JSON.stringify(orders));alert('Đặt hàng thành công ♡\\nĐây là bản 0₫ thử nghiệm.');cart=[];update();closeOrder();closeCart()}
+async function submitOrder(e){
+e.preventDefault();
+
+const sanPham = cart.map(x =>
+products[x.i].name + " x" + x.qty
+).join(" | ");
+
+const tongTien = cart.reduce(
+(s,x)=>s + products[x.i].price * x.qty,
+0
+);
+
+const data = {
+hoTen: oName.value,
+sdt: oPhone.value,
+diaChi: oAddress.value,
+sanPham: sanPham,
+mau: "",
+size: "",
+soLuong: cart.reduce((s,x)=>s+x.qty,0),
+tongTien: tongTien
+};
+
+try{
+
+await fetch(
+"https://script.google.com/macros/s/AKfycbx6KZAosFjNerA_E3phhwc7qKvTajCawOnx-7EwSNHZjMjGNVz3A9XstA_RjypxsmgBeg/exec",
+{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify(data)
+}
+);
+
+alert("Đặt hàng thành công!");
+
+cart=[];
+update();
+
+oName.value="";
+oPhone.value="";
+oAddress.value="";
+oNote.value="";
+
+closeOrder();
+closeCart();
+
+}catch(err){
+
+console.error(err);
+alert("Không gửi được đơn hàng.");
+
+}
+}
 function showLogin(){loginModal.classList.add('open')}function login(){if(user.value==='admin'&&pass.value==='laahh2026'){loginModal.classList.remove('open');shop.style.display='none';admin.style.display='block';renderAdmin()}else alert('Sai tài khoản hoặc mật khẩu.')}
 function showShop(){admin.style.display='none';shop.style.display='block'}
 function renderAdmin(){rows.innerHTML=products.map((p,i)=>`<tr><td>${p.name}</td><td>${money(p.price)}</td><td>${p.cat}</td><td>${p.color}</td><td><button class="small" onclick="editProduct(${i})">Sửa</button> <button class="small" onclick="delProduct(${i})">Xóa</button></td></tr>`).join('');ordersEl=orders.map(o=>`<tr><td>${o.date}</td><td>${o.name}<br>${o.phone}</td><td>${o.items.map(x=>x.name+' × '+x.qty).join('<br>')}</td><td>${money(o.total)}</td></tr>`).join('');orders.innerHTML=ordersEl||'<tr><td colspan="4" style="text-align:center;padding:30px;color:#777">Chưa có đơn.</td></tr>'}
